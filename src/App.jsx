@@ -1,62 +1,47 @@
 import './App.css';
-import { Square } from './Square';
+import { Square } from './components/Square';
 import { useState } from 'react';
 import confetti from 'canvas-confetti';
-
-const TURNS = {
-  X: "X",
-  O: "O"
-}
-const WINNER_COMBOS = [
-  [0,1,2],
-  [3,4,5],
-  [6,7,8],
-  [0,3,6],
-  [1,4,7],
-  [2,5,8],
-  [0,4,8],
-  [2,4,6]
-]
+import { TURNS } from './constants/constants';
+import { checkEndGame, checkWinner, saveToLocalStorage, getToLocalStorage } from './utils/utils';
 
 function App() {
 
-  const [board, setBoard] = useState(Array(9).fill(null));
-  const [turn, setTurn] = useState(TURNS.X);
+  const [board, setBoard] = useState(()=>{
+    const inLocal = JSON.parse(getToLocalStorage('board'));
+    return inLocal ? inLocal : Array(9).fill(null);
+  })
+
+  const [turn, setTurn] = useState(()=>{
+    const inLocal = JSON.parse(getToLocalStorage('turn'));
+    return inLocal ? inLocal : TURNS.X;
+  })
+
   const [winner, setWinner] = useState(null);
 
   const resetBoard = ()=>{
     setBoard(Array(9).fill(null));
     setWinner(null);
+    window.localStorage.removeItem('board')
+    window.localStorage.removeItem('turn')
   }
-
-  const checkWinner = (boardToCheck) => {
-    for (const combo of WINNER_COMBOS) {
-      const [a, b ,c] = combo;
-      if (
-        boardToCheck[a] &&
-        boardToCheck[a] === boardToCheck[b] &&
-        boardToCheck[a] === boardToCheck[c]
-      ) {
-        return boardToCheck[a];
-      }
-    }
-    return null
-  }
-
-  const checkEndGame = (boardToCheck)=>{
-      return boardToCheck.every(element => element !== null);
-  } 
 
   const updateBoard = (index) => {
+    // Actualizar tablero
     const newBoard = [...board];
     if(newBoard[index] || winner) return;
-
     newBoard[index] = turn;
     setBoard(newBoard); 
 
+    // Actualizar turno
     const newTurn = turn === TURNS.X ? TURNS.O : TURNS.X;
     setTurn(newTurn);
+    
+    // Guardar cambios en localStorage
+    saveToLocalStorage('board', newBoard);
+    saveToLocalStorage('turn', newTurn);
 
+    // Verificar ganador o si hay empate
     const newWinner = checkWinner(newBoard);
     if(newWinner) {
       confetti()
